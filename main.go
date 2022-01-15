@@ -7,9 +7,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/natefinch/lumberjack"
+	"github.com/panshiqu/analyst/cache"
 	"github.com/panshiqu/analyst/define"
 	"github.com/panshiqu/analyst/handler"
 	"github.com/panshiqu/analyst/utils"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -30,24 +32,30 @@ func main() {
 
 	bot.Debug = true
 
+	cache.Bot = bot
+
 	log.Println("Authorized on account", bot.Self.UserName)
 
 	updates := bot.ListenForWebhook(fmt.Sprintf("/%s", bot.Token))
 	go http.ListenAndServe(":8443", nil)
+
+	c := cron.New()
+	c.AddFunc("* * * * *", handler.PerMinute)
+	c.Start()
 
 	for u := range updates {
 		if u.Message == nil {
 			continue
 		}
 
-		log.Printf("Recv [%s] %s\n", u.Message.From.UserName, u.Message.Text)
+		log.Printf("Recv [%d] [%s] %s\n", u.Message.Chat.ID, u.Message.From.UserName, u.Message.Text)
 
-		text, err := handler.Handle(u.Message.From.UserName, u.Message.Text)
+		text, err := handler.Handle(u.Message.Chat.ID, u.Message.From.UserName, u.Message.Text)
 		if err != nil {
 			text = err.Error()
 		}
 
-		log.Printf("Send [%s] %s\n", u.Message.From.UserName, text)
+		log.Printf("Send [%d] [%s] %s\n", u.Message.Chat.ID, u.Message.From.UserName, text)
 
 		msg := tgbotapi.NewMessage(u.Message.Chat.ID, text)
 

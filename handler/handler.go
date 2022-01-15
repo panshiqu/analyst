@@ -4,16 +4,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/panshiqu/analyst/cache"
 	"github.com/panshiqu/analyst/define"
 	"github.com/panshiqu/analyst/utils"
 )
 
-func Handle(name, text string) (string, error) {
+func PerMinute() {
+	log.Println(Handle(0, "", "get btc"))
+	log.Println(Handle(0, "", "get eth"))
+}
+
+func Handle(id int64, name, text string) (string, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("recover", err)
+		}
+	}()
+
 	params := strings.Split(text, " ")
 	t := strings.ToLower(text)
 
@@ -26,11 +39,11 @@ func Handle(name, text string) (string, error) {
 		return getPrice(params[1:])
 
 	case strings.HasPrefix(t, "set alert"):
-		return setAlert(name, params[2:])
+		return setAlert(id, name, params[2:])
 	case strings.HasPrefix(t, "setalert"):
-		return setAlert(name, params[1:])
+		return setAlert(id, name, params[1:])
 	case strings.HasPrefix(t, "set"):
-		return setAlert(name, params[1:])
+		return setAlert(id, name, params[1:])
 
 	case strings.HasPrefix(t, "analyse cost"):
 		return analyseCost(name, params[2:])
@@ -95,11 +108,43 @@ func getPrice(params []string) (string, error) {
 		return r.Message, nil
 	}
 
+	price, err := strconv.ParseFloat(r.Quote, 64)
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	if err := cache.NotifyAlerts(address, price/iAmount); err != nil {
+		return "", utils.Wrap(err)
+	}
+
 	return fmt.Sprintf("%s\n\nPrice: %s\nGas: %s", r.RouteString, r.Quote, r.EstimatedGasUsedUSD), nil
 }
 
-func setAlert(name string, params []string) (string, error) {
-	return "coming soon", nil
+func setAlert(id int64, name string, params []string) (string, error) {
+	if len(params) == 0 {
+		return "success", cache.NotifyCurrentAlerts(name, "")
+	}
+
+	address, _, err := utils.Symbol2Address(params[0])
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	if len(params) == 1 {
+		return "success", cache.NotifyCurrentAlerts(name, address)
+	}
+
+	price, err := strconv.ParseFloat(params[1], 64)
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	var notify string
+	if len(params) > 2 {
+		notify = params[2]
+	}
+
+	return "success", cache.HandleAlert(id, name, address, price, notify)
 }
 
 func analyseCost(name string, params []string) (string, error) {

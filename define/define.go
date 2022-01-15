@@ -18,10 +18,18 @@ type Response struct {
 	Message                    string `json:"message,omitempty"`
 }
 
+type Alert struct {
+	ID      int64
+	Name    string
+	Address string
+	Price   float64
+	Notify  string
+}
+
 const (
-	WBTCAddress = "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6"
+	WBTCAddress = "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6"
 
-	WETHAddress = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
+	WETHAddress = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
 
-	WMATICAddress = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+	WMATICAddress = "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
 )
