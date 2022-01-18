@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/natefinch/lumberjack"
@@ -14,12 +17,28 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+func handleSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	s := <-c
+	log.Println("Got signal:", s)
+
+	if err := cache.SaveAlerts(); err != nil {
+		log.Println("SaveAlerts", err)
+	}
+}
+
 func main() {
 	log.SetOutput(&lumberjack.Logger{
 		Filename: "./log/analyst.log",
 		MaxSize:  50,
 		MaxAge:   30,
 	})
+
+	if err := cache.LoadAlerts(); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := utils.ReadJSON("config.json", &define.C); err != nil {
 		log.Fatal(err)
@@ -38,6 +57,8 @@ func main() {
 
 	updates := bot.ListenForWebhook(fmt.Sprintf("/%s", bot.Token))
 	go http.ListenAndServe(":8443", nil)
+
+	go handleSignal()
 
 	c := cron.New()
 	c.AddFunc("* * * * *", handler.PerMinute)

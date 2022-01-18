@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/panshiqu/analyst/cache"
 	"github.com/panshiqu/analyst/define"
@@ -148,5 +150,104 @@ func setAlert(id int64, name string, params []string) (string, error) {
 }
 
 func analyseCost(name string, params []string) (string, error) {
-	return "coming soon...", nil
+	if len(params) > 0 && params[0] != "" {
+		name = params[0]
+	}
+
+	address, err := utils.Name2Address(name)
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	start := 0
+	if len(params) > 1 && params[1] != "" {
+		n, err := strconv.Atoi(params[1])
+		if err != nil {
+			return "", utils.Wrap(err)
+		}
+		start = n
+	}
+
+	end := 99999999
+	if len(params) > 2 && params[2] != "" {
+		n, err := strconv.Atoi(params[2])
+		if err != nil {
+			return "", utils.Wrap(err)
+		}
+		end = n
+	}
+
+	resp, err := http.Get(fmt.Sprintf("https://api.polygonscan.com/api?module=account&action=tokentx&address=%s&startblock=%d&endblock=%d&page=1&offset=10000&sort=asc", address, start, end))
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	r := &define.ScanResponse{}
+	if err := json.Unmarshal(body, r); err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	if r.Status != 1 || !strings.HasPrefix(r.Message, "OK") {
+		return fmt.Sprintf("Status: %d\nMessage: %s", r.Status, r.Message), nil
+	}
+
+	var ts []*define.Transfer
+	if err := json.Unmarshal(r.Result, &ts); err != nil {
+		return "", utils.Wrap(err)
+	}
+
+	if len(ts) < 2 {
+		return "nothing", nil
+	}
+
+	var buf bytes.Buffer
+	m := make(map[string]*big.Int)
+	for i := 1; i < len(ts); i++ {
+		a, b := ts[i-1], ts[i]
+		if a.Hash != b.Hash {
+			continue
+		}
+
+		if a.From != address {
+			a, b = b, a
+		}
+
+		symbol := b.TokenSymbol
+		decimal := b.TokenDecimal
+		p, q := a.Value, b.Value
+		if a.TokenSymbol != "USDC" {
+			symbol = a.TokenSymbol
+			decimal = a.TokenDecimal
+			p, q = utils.Neg(q), utils.Neg(p)
+		}
+
+		us := fmt.Sprintf("usd%s", symbol)
+		bs := fmt.Sprintf("btc%s", symbol)
+
+		usd, ok := new(big.Int).SetString(p, 10)
+		if !ok {
+			return "", utils.Wrap(fmt.Errorf("big.Int.SetString %s", p))
+		}
+
+		btc, ok := new(big.Int).SetString(q, 10)
+		if !ok {
+			return "", utils.Wrap(fmt.Errorf("big.Int.SetString %s", q))
+		}
+
+		utils.MapAdd(m, us, usd)
+		utils.MapAdd(m, bs, btc)
+
+		fmt.Fprintf(&buf, "%s %s\n%s > %s\n%.6f / %.6f\n\n", time.Unix(a.TimeStamp, 0).Format("01-02 15:04"),
+			a.BlockNumber, a, b, utils.Avg(usd, btc, decimal), utils.Avg(m[us], m[bs], decimal))
+
+		i++
+	}
+
+	return buf.String(), nil
 }

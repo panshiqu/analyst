@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,21 @@ func Address2Symbol(address string) string {
 	return address
 }
 
+func Name2Address(name string) (string, error) {
+	if len(name) == 42 && strings.HasPrefix(name, "0x") {
+		return strings.ToLower(name), nil
+	}
+
+	switch strings.ToUpper(name) {
+	case "PANSHI", "PANSHIQU":
+		return define.PanShiAddress, nil
+	case "ZHUGE", "ZHUGEFEIA":
+		return define.ZhuGeAddress, nil
+	default:
+		return "", Wrap(fmt.Errorf("unsupported name: %s", name))
+	}
+}
+
 func IsDisableNotification(notify string) bool {
 	if notify == "" {
 		return true
@@ -65,4 +81,20 @@ func IsDisableNotification(notify string) bool {
 		}
 	}
 	return true
+}
+
+func MapAdd(m map[string]*big.Int, k string, v *big.Int) {
+	if _, ok := m[k]; !ok {
+		m[k] = v
+	} else {
+		m[k] = new(big.Int).Add(m[k], v)
+	}
+}
+
+func Neg(v string) string {
+	return fmt.Sprintf("-%s", v)
+}
+
+func Avg(a *big.Int, b *big.Int, d int) float64 {
+	return float64(new(big.Int).Div(new(big.Int).Mul(a, new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(d)), nil)), b).Int64()) / 1000000
 }

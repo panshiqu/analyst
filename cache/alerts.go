@@ -1,7 +1,10 @@
 package cache
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -103,4 +106,33 @@ func NotifyCurrentAlerts(name string, address string) error {
 	}
 
 	return nil
+}
+
+const alertsFile = "/tmp/alerts.json"
+
+func SaveAlerts() error {
+	alertsMutex.Lock()
+	defer alertsMutex.Unlock()
+
+	data, err := json.Marshal(alerts)
+	if err != nil {
+		return utils.Wrap(err)
+	}
+
+	if err := ioutil.WriteFile(alertsFile, data, 0644); err != nil {
+		return utils.Wrap(err)
+	}
+
+	return nil
+}
+
+func LoadAlerts() error {
+	if _, err := os.Stat(alertsFile); os.IsNotExist(err) {
+		return nil
+	}
+
+	alertsMutex.Lock()
+	defer alertsMutex.Unlock()
+
+	return utils.ReadJSON(alertsFile, &alerts)
 }
