@@ -50,6 +50,8 @@ func HandleAlert(id int64, name string, address string, price float64, notify st
 }
 
 func NotifyAlerts(address string, price float64) error {
+	AppendPrice(address, price)
+
 	alertsMutex.Lock()
 	defer alertsMutex.Unlock()
 

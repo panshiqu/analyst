@@ -27,6 +27,12 @@ func handleSignal() {
 	if err := cache.SaveAlerts(); err != nil {
 		log.Println("SaveAlerts", err)
 	}
+
+	if err := cache.SavePrices(); err != nil {
+		log.Println("SavePrices", err)
+	}
+
+	os.Exit(0)
 }
 
 func main() {
@@ -37,6 +43,10 @@ func main() {
 	})
 
 	if err := cache.LoadAlerts(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := cache.LoadPrices(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -56,6 +66,9 @@ func main() {
 	log.Println("Authorized on account", bot.Self.UserName)
 
 	updates := bot.ListenForWebhook(fmt.Sprintf("/%s", bot.Token))
+
+	http.HandleFunc("/prices", cache.ServeHTTP)
+
 	go http.ListenAndServe(":8443", nil)
 
 	go handleSignal()

@@ -57,6 +57,16 @@ func (t *Transfer) String() (s string) {
 	return fmt.Sprintf("%s %s", strings.TrimRight(s, "0"), t.TokenSymbol)
 }
 
+type PricesResponse struct {
+	Message string   `json:"message,omitempty"`
+	Prices  []*Price `json:"prices,omitempty"`
+}
+
+type Price struct {
+	Time  int64   `json:"time"`
+	Value float64 `json:"value"`
+}
+
 const (
 	WBTCAddress = "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6"
 
