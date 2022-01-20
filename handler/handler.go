@@ -20,6 +20,9 @@ import (
 func PerMinute() {
 	log.Println(Handle(0, "", "get btc"))
 	log.Println(Handle(0, "", "get eth"))
+	log.Println(Handle(0, "", "get matic"))
+	log.Println(Handle(0, "", "get link"))
+	log.Println(Handle(0, "", "get uni"))
 }
 
 func Handle(id int64, name, text string) (string, error) {

@@ -24,6 +24,20 @@ func Symbol2Address(symbol string) (string, int64, error) {
 	}
 
 	switch strings.ToUpper(symbol) {
+	case "LUNA":
+		return define.LUNAAddress, 18, nil
+	case "AVAX":
+		return define.AVAXAddress, 18, nil
+	case "MKR":
+		return define.MKRAddress, 18, nil
+	case "LINK":
+		return define.LINKAddress, 18, nil
+	case "MANA":
+		return define.MANAAddress, 18, nil
+	case "CRV":
+		return define.CRVAddress, 18, nil
+	case "UNI":
+		return define.UNIAddress, 18, nil
 	case "MATIC", "WMATIC":
 		return define.WMATICAddress, 18, nil
 	case "ETH", "WETH":
@@ -37,6 +51,20 @@ func Symbol2Address(symbol string) (string, int64, error) {
 
 func Address2Symbol(address string) string {
 	switch address {
+	case define.LUNAAddress:
+		return "LUNA"
+	case define.AVAXAddress:
+		return "AVAX"
+	case define.MKRAddress:
+		return "MKR"
+	case define.LINKAddress:
+		return "LINK"
+	case define.MANAAddress:
+		return "MANA"
+	case define.CRVAddress:
+		return "CRV"
+	case define.UNIAddress:
+		return "UNI"
 	case define.WMATICAddress:
 		return "MATIC"
 	case define.WETHAddress:

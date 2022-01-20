@@ -1,0 +1,63 @@
+<canvas id='myChart'></canvas>
+<form>
+    Symbol: <input id='symbol' type='text' name='s'>
+    Number: <input id='number' type='number' name='n'>
+    <input type='submit' value='Refresh'>
+</form>
+<script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+<script>
+    let labels = [];
+    let values = [];
+    let params = new URLSearchParams(window.location.search);
+    let symbol = params.get('s') ?? 'BTC';
+    let number = params.get('n') ?? '120';
+    symbol = symbol.toUpperCase();
+    document.getElementById('symbol').value = symbol;
+    document.getElementById('number').value = number;
+
+    fetch('https://tg.chainsscan.com/prices?s=' + symbol + '&n=' + number).then(function (response) {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error(response.status + ' (' + response.statusText + ')');
+    }).then(function (json) {
+        if (json.message) {
+            throw new Error(json.message);
+        }
+
+        for (let v of json.prices) {
+            let date = new Date(v.time * 1000);
+            labels.push(date.getDate() + ' ' + date.toLocaleTimeString('it-IT').slice(0, 5));
+            values.push(v.value);
+        }
+
+        let borderWidth = 3;
+        let pointRadius = 3;
+        if (json.prices.length > 120) {
+            borderWidth = 1;
+            pointRadius = 0.3;
+        }
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: symbol + ' ' + json.prices.length + ' ' + json.prices.pop().value.toFixed(2),
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                borderWidth: borderWidth,
+                pointRadius: pointRadius,
+                data: values,
+            }],
+        };
+
+        const config = {
+            type: 'line',
+            data: data,
+        };
+
+        new Chart(document.getElementById('myChart'), config);
+    }).catch(function (error) {
+        console.error(error);
+        alert(error);
+    });
+</script>

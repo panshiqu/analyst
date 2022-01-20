@@ -43,7 +43,7 @@ func AppendPrice(address string, value float64) {
 	if !ok || len(ps) >= MaxCap {
 		prices[address] = make([]*define.Price, 0, MaxCap)
 		if ok {
-			prices[address] = append(prices[address], ps[MaxCap/2:]...)
+			prices[address] = append(prices[address], ps[MaxCap/10:]...)
 		}
 	}
 
