@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/panshiqu/analyst/cache"
@@ -17,7 +18,15 @@ import (
 	"github.com/panshiqu/analyst/utils"
 )
 
+var atom int32
+
 func PerMinute() {
+	defer atomic.AddInt32(&atom, -1)
+
+	if atomic.AddInt32(&atom, 1) != 1 {
+		return
+	}
+
 	log.Println(Handle(0, "", "get btc"))
 	log.Println(Handle(0, "", "get eth"))
 	log.Println(Handle(0, "", "get matic"))
@@ -241,6 +250,13 @@ func analyseCost(name string, params []string) (string, error) {
 		btc, ok := new(big.Int).SetString(q, 10)
 		if !ok {
 			return "", utils.Wrap(fmt.Errorf("big.Int.SetString %s", q))
+		}
+
+		// polygon 0x92cae7576fe8c3165c7c113b8328bbc23d641ec9ddc28dc5472bd187cf4cb0fb
+		if a.TokenSymbol == b.TokenSymbol {
+			ts[i].Value = new(big.Int).Add(usd, btc).String()
+			ts[i-1].Value = "0"
+			continue
 		}
 
 		utils.MapAdd(m, us, usd)
