@@ -1,6 +1,10 @@
 ```
 /home/ubuntu
 │
+└───cmd
+│   │   crypt
+│   │   command
+│
 └───analyst
 │   │   analyst
 │   │   monit.sh
@@ -12,6 +16,7 @@
 │   │   tsconfig.json
 │
 └───conf.d
+│   │   cmd.conf
 │   │   line.conf
 │   │   tg.conf
 │
