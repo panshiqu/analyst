@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { Token, TradeType, CurrencyAmount } from '@uniswap/sdk-core';
 import { AlphaRouter, V3QuoteProvider, UniswapMulticallProvider, ChainId, routeAmountsToString } from '@uniswap/smart-order-router';
 
-const web3Provider = new ethers.providers.JsonRpcProvider('https://rpc-mainnet.matic.quiknode.pro');
+const web3Provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com');
 
 const multicall2Provider = new UniswapMulticallProvider(ChainId.POLYGON, web3Provider, 375_000);
 
